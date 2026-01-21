@@ -1,0 +1,38 @@
+# CLI Dependencies
+cli/node_modules/
+
+# CLI Build output
+cli/dist/
+
+# Landing page
+landing/node_modules/
+landing/.next/
+landing/out/
+landing/bun.lock
+
+# Web app
+web/node_modules/
+web/.next/
+web/out/
+web/data/*.db
+
+# Bun
+bun.lockb
+
+# Ralphy local config (used for testing)
+.ralphy/
+!.ralphy/progress.txt
+.ralphy-worktrees/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
