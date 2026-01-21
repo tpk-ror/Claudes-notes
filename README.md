@@ -389,3 +389,9 @@ capabilities:
 ## License
 
 MIT
+
+---
+
+<p align="center">
+  <img src="assets/shannon2.gif" alt="Shannon" width="300">
+</p>
