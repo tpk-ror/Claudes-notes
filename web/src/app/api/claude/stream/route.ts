@@ -1,8 +1,9 @@
 // API endpoint that spawns Claude CLI and streams output via SSE
 // Based on PRD Section 4.5 and Appendix C
 
-import { spawn, ChildProcess } from 'child_process';
+import { ChildProcess } from 'child_process';
 import { NextRequest } from 'next/server';
+import { spawnProcess } from '@/lib/cli-spawn';
 
 // Request body interface
 interface StreamRequest {
@@ -13,18 +14,6 @@ interface StreamRequest {
 
 // Track active CLI processes for cleanup
 const activeProcesses = new Map<string, ChildProcess>();
-
-// Exported for testing - allows injecting a mock spawn function
-export type SpawnFn = typeof spawn;
-let spawnFunction: SpawnFn = spawn;
-
-export function setSpawnFunction(fn: SpawnFn): void {
-  spawnFunction = fn;
-}
-
-export function resetSpawnFunction(): void {
-  spawnFunction = spawn;
-}
 
 export async function POST(request: NextRequest): Promise<Response> {
   let body: StreamRequest;
@@ -119,7 +108,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       console.log('[Claude API] CWD:', projectPath || process.cwd());
       console.log('[Claude API] Using shell:', isWindows);
 
-      const cliProcess = spawnFunction(claudeCommand, args, {
+      const cliProcess = spawnProcess(claudeCommand, args, {
         cwd: projectPath || process.cwd(),
         env: { ...process.env },
         stdio: ['ignore', 'pipe', 'pipe'],
@@ -195,10 +184,10 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     cancel() {
       // Clean up all active processes when stream is cancelled
-      for (const [id, proc] of activeProcesses) {
+      activeProcesses.forEach((proc, id) => {
         proc.kill('SIGTERM');
         activeProcesses.delete(id);
-      }
+      });
     },
   });
 

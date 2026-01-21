@@ -1,7 +1,7 @@
 # Claude's Notes
 
 <p align="center">
-  <img src="assets/claudes-notes.svg" alt="Claude's Notes" width="400">
+  <img src="assets/claudes-notes.svg" alt="Claude's Notes" >
 </p>
 
 <p align="center">
