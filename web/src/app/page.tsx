@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { CollapsibleSidebar } from "@/components/sidebar/collapsible-sidebar";
-import { TwoPanelLayout, ChatPanel, EnhancedPlanPanel } from "@/components/layout";
+import { TwoPanelLayout, ChatPanel, EnhancedPlanPanel, AiChatPanel } from "@/components/layout";
+import { AiPlanPanel } from "@/components/plan";
 import { ThemeToggle } from "@/components/theme";
 import { ContextIndicator } from "@/components/chat/context-indicator";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,10 @@ import { detectPlanContent, extractPlanTitle, getMinDetectionLength, hasEarlyPla
 import { readPlanFile, createPlanFile } from "@/lib/plan-file-api";
 import { generatePlanFileName, extractPlanNameFromContent } from "@/lib/plan-file-utils";
 import type { PlanFileInfo } from "@/types/plan-files";
+
+// Feature flag for AI Elements integration
+// Set NEXT_PUBLIC_USE_AI_ELEMENTS=true in .env.local to enable
+const USE_AI_ELEMENTS = process.env.NEXT_PUBLIC_USE_AI_ELEMENTS === "true";
 
 // Default project path - in a real app this would come from user selection
 const DEFAULT_PROJECT_PATH = process.cwd?.() || "/";
@@ -67,6 +72,43 @@ export default function Home() {
     setCurrentSession(session.id);
     clearActiveFile();
   }, [createNewSession, sessions.length, setCurrentSession, projectPath, clearActiveFile]);
+
+  // Handle streaming text - route to chat or plan editor
+  const handleStreamText = React.useCallback(
+    (text: string, assistantMessageId: string) => {
+      // Accumulate for detection
+      streamAccumulatorRef.current += text;
+      const accumulated = streamAccumulatorRef.current;
+
+      // Check if we should detect plan content
+      if (!isPlanStreamRef.current && accumulated.length >= getMinDetectionLength()) {
+        // Check for early indicators first (faster)
+        if (hasEarlyPlanIndicators(accumulated)) {
+          const detection = detectPlanContent(accumulated);
+          if (detection.isPlanContent && detection.confidence >= 0.4) {
+            console.log("[Chat] Plan content detected, routing to editor. Confidence:", detection.confidence);
+            isPlanStreamRef.current = true;
+
+            // Start streaming to plan editor
+            const fileName = generatePlanFileName(detection.planTitle || 'plan');
+            startStreaming(fileName);
+
+            // Send accumulated content to plan editor
+            appendStreamContent(accumulated);
+            return;
+          }
+        }
+      }
+
+      // Route to appropriate destination
+      if (isPlanStreamRef.current) {
+        appendStreamContent(text);
+      } else {
+        appendToMessage(assistantMessageId, text);
+      }
+    },
+    [appendToMessage, startStreaming, appendStreamContent]
+  );
 
   // Handle sending a message
   const handleSubmitMessage = React.useCallback(
@@ -263,43 +305,6 @@ export default function Home() {
     ]
   );
 
-  // Handle streaming text - route to chat or plan editor
-  const handleStreamText = React.useCallback(
-    (text: string, assistantMessageId: string) => {
-      // Accumulate for detection
-      streamAccumulatorRef.current += text;
-      const accumulated = streamAccumulatorRef.current;
-
-      // Check if we should detect plan content
-      if (!isPlanStreamRef.current && accumulated.length >= getMinDetectionLength()) {
-        // Check for early indicators first (faster)
-        if (hasEarlyPlanIndicators(accumulated)) {
-          const detection = detectPlanContent(accumulated);
-          if (detection.isPlanContent && detection.confidence >= 0.4) {
-            console.log("[Chat] Plan content detected, routing to editor. Confidence:", detection.confidence);
-            isPlanStreamRef.current = true;
-
-            // Start streaming to plan editor
-            const fileName = generatePlanFileName(detection.planTitle || 'plan');
-            startStreaming(fileName);
-
-            // Send accumulated content to plan editor
-            appendStreamContent(accumulated);
-            return;
-          }
-        }
-      }
-
-      // Route to appropriate destination
-      if (isPlanStreamRef.current) {
-        appendStreamContent(text);
-      } else {
-        appendToMessage(assistantMessageId, text);
-      }
-    },
-    [appendToMessage, startStreaming, appendStreamContent]
-  );
-
   // Handle option selection from interactive options
   const handleOptionSelect = React.useCallback(
     (value: string) => {
@@ -376,20 +381,37 @@ export default function Home() {
                     className="mx-4 mt-2"
                   />
                 )}
-                <ChatPanel
-                  sessionId={currentSessionId || undefined}
-                  onSubmitMessage={handleSubmitMessage}
-                  disabled={isStreaming}
-                  placeholder={
-                    loadedPlanContext
-                      ? "Continue editing the plan..."
-                      : "Ask Claude to help plan your feature..."
-                  }
-                />
+                {USE_AI_ELEMENTS ? (
+                  /* AI SDK integrated chat panel */
+                  <AiChatPanel
+                    projectPath={projectPath}
+                    placeholder={
+                      loadedPlanContext
+                        ? "Continue editing the plan..."
+                        : "Ask Claude to help plan your feature..."
+                    }
+                  />
+                ) : (
+                  /* Legacy chat panel with manual streaming */
+                  <ChatPanel
+                    sessionId={currentSessionId || undefined}
+                    onSubmitMessage={handleSubmitMessage}
+                    disabled={isStreaming}
+                    placeholder={
+                      loadedPlanContext
+                        ? "Continue editing the plan..."
+                        : "Ask Claude to help plan your feature..."
+                    }
+                  />
+                )}
               </div>
             }
             rightPanel={
-              <EnhancedPlanPanel projectPath={projectPath} />
+              USE_AI_ELEMENTS ? (
+                <AiPlanPanel projectPath={projectPath} />
+              ) : (
+                <EnhancedPlanPanel projectPath={projectPath} />
+              )
             }
           />
         </div>

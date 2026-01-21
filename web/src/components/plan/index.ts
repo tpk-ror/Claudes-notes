@@ -19,3 +19,7 @@ export { EditPlanDialog } from "./edit-plan-dialog";
 export type { EditPlanDialogProps } from "./edit-plan-dialog";
 export { LiveMarkdownEditor } from "./live-markdown-editor";
 export type { LiveMarkdownEditorProps } from "./live-markdown-editor";
+
+// AI SDK integrated components
+export { AiPlanPanel } from "./ai-plan-panel";
+export type { AiPlanPanelProps } from "./ai-plan-panel";

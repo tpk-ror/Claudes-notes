@@ -26,6 +26,10 @@ interface MessageActions {
   clearMessages: () => void;
   getMessagesBySession: (sessionId: string) => Message[];
   setStreaming: (isStreaming: boolean, messageId?: string | null) => void;
+  /** Sync a message from AI SDK to Zustand (upsert) */
+  syncMessage: (message: Message) => void;
+  /** Bulk sync messages from AI SDK to Zustand */
+  syncMessages: (messages: Message[]) => void;
 }
 
 export type MessageStore = MessageState & MessageActions;
@@ -102,4 +106,27 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
 
   setStreaming: (isStreaming, messageId = null) =>
     set({ isStreaming, streamingMessageId: messageId }),
+
+  syncMessage: (message) =>
+    set((state) => {
+      const existingIndex = state.messages.findIndex((m) => m.id === message.id);
+      if (existingIndex >= 0) {
+        // Update existing message
+        const updated = [...state.messages];
+        updated[existingIndex] = message;
+        return { messages: updated };
+      } else {
+        // Add new message
+        return { messages: [...state.messages, message] };
+      }
+    }),
+
+  syncMessages: (messages) =>
+    set((state) => {
+      const messageMap = new Map(state.messages.map((m) => [m.id, m]));
+      for (const message of messages) {
+        messageMap.set(message.id, message);
+      }
+      return { messages: Array.from(messageMap.values()) };
+    }),
 }));

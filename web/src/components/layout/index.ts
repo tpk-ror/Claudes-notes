@@ -13,3 +13,7 @@ export type { ResponsiveContainerProps } from "./responsive-container";
 
 export { EnhancedPlanPanel } from "./enhanced-plan-panel";
 export type { EnhancedPlanPanelProps } from "./enhanced-plan-panel";
+
+// AI SDK integrated components
+export { AiChatPanel } from "./ai-chat-panel";
+export type { AiChatPanelProps } from "./ai-chat-panel";

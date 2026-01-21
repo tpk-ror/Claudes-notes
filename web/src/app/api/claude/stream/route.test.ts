@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { EventEmitter } from 'events';
 import type { ChildProcess, SpawnOptions } from 'child_process';
-import { POST, setSpawnFunction, resetSpawnFunction, SpawnFn } from './route';
+import { POST } from './route';
+import { setSpawnFunction, resetSpawnFunction, type SpawnFn } from '@/lib/cli-spawn';
 
 // Create mock process factory
 function createMockProcess(): ChildProcess & {
